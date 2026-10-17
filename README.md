@@ -20,31 +20,6 @@ The generated chain includes:
 - An OpenMC `materials.xml` file
 - An OpenMC `cross_sections.xml` file
 
-## Usage
-
-```bash
-python generate_fusion_chain.py \
-  --materials /path/to/materials.xml \
-  --base /path/to/chain_endfb81_fast.xml \
-  --cross-sections /path/to/cross_sections.xml \
-  --output chain_fusion_breeder.xml
-```
-
-The `--cross-sections` option may be omitted when
-`OPENMC_CROSS_SECTIONS` is set:
-
-```bash
-export OPENMC_CROSS_SECTIONS=/path/to/cross_sections.xml
-python generate_fusion_chain.py \
-  --materials /path/to/materials.xml \
-  --base /path/to/chain.xml \
-  --output chain_fusion_breeder.xml
-```
-
-The program stops with an error if a material nuclide is absent from the
-neutron-library index or if its referenced neutron-data file does not exist.
-It also stops if a material nuclide is absent from the base depletion chain.
-
 ## Installation
 
 From the project directory:
