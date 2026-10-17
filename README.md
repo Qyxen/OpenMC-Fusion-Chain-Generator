@@ -55,6 +55,20 @@ build_chain(
     materials_file=Path("/path/to/materials.xml"),
     cross_sections_file=Path("/path/to/cross_sections.xml"),
     output_file=Path("chain_fusion_breeder.xml"),
+    include_all_nuclides=False,
+)
+```
+
+To retain every nuclide from the base chain, independently of the nuclides
+listed in `materials.xml`, use:
+
+```python
+build_chain(
+    base_file=Path("chain_endfb81_fast.xml"),
+    materials_file=Path("materials.xml"),
+    cross_sections_file=Path("cross_sections.xml"),
+    output_file=Path("chain_all_nuclides.xml"),
+    include_all_nuclides=True,
 )
 ```
 
@@ -79,6 +93,17 @@ that has neutron reactions before writing the output. It raises `RuntimeError`
 with the missing nuclide or data-file paths when the selected library is
 incomplete.
 
+The equivalent command-line option is:
+
+```bash
+python src/generate_fusion_chain.py \
+  --materials /path/to/materials.xml \
+  --base /path/to/chain.xml \
+  --cross-sections /path/to/cross_sections.xml \
+  --output chain_all_nuclides.xml \
+  --include-all-nuclides
+```
+
 ## Using the generated chain
 
 MT=205 is represented by the custom `(n,Xt)` reaction. Import the generator
@@ -102,6 +127,4 @@ base chain files.
 
 ## Citation
 
-Citation metadata is provided in [CITATION.cff](CITATION.cff). The software
-author is Hridoy Kabiraj, ORCID:
-[0009-0001-4737-710X](https://orcid.org/0009-0001-4737-710X).
+Citation metadata is provided in [CITATION.cff](CITATION.cff).

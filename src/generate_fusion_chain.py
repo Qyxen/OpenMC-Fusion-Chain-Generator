@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Generate a reduced OpenMC depletion chain for a fusion breeder blanket.
 
-The stock ENDF/B-VIII.1 chain in this directory does not include the
-tritium-producing lithium reactions.  This script preserves the relevant
-decay data from the stock chain and adds:
+The stock OpenMC depletion chain does not include the tritium-producing 
+lithium reactions. This script preserves the relevant decay data from the 
+stock chain and adds:
 
     Li-6(n,t)He-4 + H-3       (MT=105)
     Li-7(n,Xt) + H-3          (MT=205, inclusive channel)
@@ -149,8 +149,13 @@ def build_chain(
     materials_file: Path,
     cross_sections_file: Path,
     output_file: Path,
+    include_all_nuclides: bool = False,
 ) -> None:
-    """Build and export the reduced fusion-breeder chain."""
+    """Build and export a fusion-breeder depletion chain.
+
+    If ``include_all_nuclides`` is true, every nuclide in the base chain is
+    retained, regardless of which nuclides appear in ``materials.xml``.
+    """
 
     material_nuclides = read_material_nuclides(materials_file)
     base = Chain.from_xml(str(base_file))
@@ -162,7 +167,10 @@ def build_chain(
     if not any(rx.type == "(n,Xt)" for rx in base["Li7"].reactions):
         base["Li7"].add_reaction("(n,Xt)", None, 0.0, 1.0)
 
-    seeds = DEFAULT_KEEP | material_nuclides
+    if include_all_nuclides:
+        seeds = set(base.nuclide_dict) | DEFAULT_KEEP
+    else:
+        seeds = DEFAULT_KEEP | material_nuclides
     keep = find_daughter_closure(base, seeds)
 
     missing = sorted(name for name in keep if name not in base)
@@ -228,6 +236,11 @@ def main() -> None:
         default=Path(__file__).with_name("chain_fusion_breeder.xml"),
         help="Output depletion chain XML",
     )
+    parser.add_argument(
+        "--include-all-nuclides",
+        action="store_true",
+        help="Include every nuclide in the base depletion chain",
+    )
     args = parser.parse_args()
 
     cross_sections = args.cross_sections
@@ -249,7 +262,13 @@ def main() -> None:
             parser.error(f"{label} does not exist: {path}")
 
     try:
-        build_chain(args.base, args.materials, cross_sections, args.output)
+        build_chain(
+            args.base,
+            args.materials,
+            cross_sections,
+            args.output,
+            include_all_nuclides=args.include_all_nuclides,
+        )
     except RuntimeError as error:
         parser.error(str(error))
 
