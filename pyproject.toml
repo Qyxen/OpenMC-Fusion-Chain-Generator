@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openmc-fusion-depletion-chain-generator"
+version = "0.1.0"
+description = "Generate reduced OpenMC depletion chains for fusion breeder materials"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "openmc>=0.16",
+]
+
+[tool.setuptools]
+py-modules = ["generate_fusion_chain"]
