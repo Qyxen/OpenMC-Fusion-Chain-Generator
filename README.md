@@ -1,4 +1,4 @@
-# OpenMC Fusion Depletion Chain Generator
+# OpenMC Fusion Chain Generator
 
 Creates a reduced OpenMC depletion chain for fusion blanket materials.
 The generator reads the nuclides in an OpenMC `materials.xml`, checks that
