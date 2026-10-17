@@ -99,3 +99,9 @@ operator = openmc.deplete.CoupledOperator(
 
 The generator does not modify the input materials, cross-section library, or
 base chain files.
+
+## Citation
+
+Citation metadata is provided in [CITATION.cff](CITATION.cff). The software
+author is Hridoy Kabiraj, ORCID:
+[0009-0001-4737-710X](https://orcid.org/0009-0001-4737-710X).
