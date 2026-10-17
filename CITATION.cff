@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the following metadata."
+title: "OpenMC Fusion Depletion Chain Generator"
+abstract: >-
+  Generates reduced OpenMC depletion chains for fusion breeder materials,
+  including lithium tritium-production reactions and complete daughter paths.
+authors:
+  - family-names: Kabiraj
+    given-names: Hridoy
+    orcid: "https://orcid.org/0009-0001-4737-710X"
+version: 0.1.0
+date-released: 2026-10-17
+type: software
