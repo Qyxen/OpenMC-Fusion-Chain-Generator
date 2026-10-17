@@ -83,15 +83,17 @@ def read_neutron_library(cross_sections_file: Path) -> dict[str, Path]:
 
 
 def check_neutron_data(
-    material_nuclides: set[str], cross_sections_file: Path
+    material_nuclides: set[str], cross_sections_file: Path,
+    required_nuclides: set[str] | None = None,
 ) -> None:
-    """Fail if any material nuclide lacks an indexed neutron library file."""
+    """Fail if required nuclides lack indexed neutron library files."""
 
     neutron_library = read_neutron_library(cross_sections_file)
-    missing = sorted(name for name in material_nuclides if name not in neutron_library)
+    names_to_check = required_nuclides or material_nuclides
+    missing = sorted(name for name in names_to_check if name not in neutron_library)
     missing_files = sorted({
         str(neutron_library[name])
-        for name in material_nuclides
+        for name in names_to_check
         if name in neutron_library and not neutron_library[name].is_file()
     })
 
@@ -108,6 +110,40 @@ def check_neutron_data(
         raise RuntimeError("\n".join(message))
 
 
+def find_daughter_closure(base: Chain, seed_nuclides: set[str]) -> set[str]:
+    """Find all nuclides reachable through decay and reaction paths."""
+
+    keep = set(seed_nuclides)
+    changed = True
+
+    while changed:
+        changed = False
+        for name in list(keep):
+            if name not in base:
+                continue
+
+            nuclide = base[name]
+
+            for decay in nuclide.decay_modes:
+                if decay.target and decay.target not in keep:
+                    keep.add(decay.target)
+                    changed = True
+
+            for reaction in nuclide.reactions:
+                if reaction.target and reaction.target not in keep:
+                    keep.add(reaction.target)
+                    changed = True
+
+                reaction_info = REACTIONS.get(reaction.type)
+                if reaction_info:
+                    for secondary in reaction_info.secondaries:
+                        if secondary not in keep:
+                            keep.add(secondary)
+                            changed = True
+
+    return keep
+
+
 def build_chain(
     base_file: Path,
     materials_file: Path,
@@ -117,10 +153,17 @@ def build_chain(
     """Build and export the reduced fusion-breeder chain."""
 
     material_nuclides = read_material_nuclides(materials_file)
-    check_neutron_data(material_nuclides, cross_sections_file)
-
     base = Chain.from_xml(str(base_file))
-    keep = DEFAULT_KEEP | material_nuclides
+
+    # Add the fusion-breeder reactions before computing the closure so their
+    # products, especially H-3, are included automatically.
+    if not any(rx.type == "(n,t)" for rx in base["Li6"].reactions):
+        base["Li6"].add_reaction("(n,t)", "He4", 4.783388e6, 1.0)
+    if not any(rx.type == "(n,Xt)" for rx in base["Li7"].reactions):
+        base["Li7"].add_reaction("(n,Xt)", None, 0.0, 1.0)
+
+    seeds = DEFAULT_KEEP | material_nuclides
+    keep = find_daughter_closure(base, seeds)
 
     missing = sorted(name for name in keep if name not in base)
     if missing:
@@ -129,46 +172,21 @@ def build_chain(
             + ", ".join(missing)
         )
 
+    # Every target and daughter is in keep, so copy the paths unchanged.
+    # This preserves the complete depletion/activation inventory.
     chain = Chain()
-
-    # Copy only selected nuclides and remove reaction paths whose products are
-    # not part of the reduced chain. Decay modes are retained unchanged.
     for name in sorted(keep):
         nuclide = copy.deepcopy(base[name])
-        # Keep reaction paths even when their daughter is outside the reduced
-        # chain.  Setting target=None preserves the destruction rate and the
-        # original branching-ratio sum; deleting the path can leave a reaction
-        # type with branching ratios that no longer sum to one.
-        nuclide.reactions = [
-            reaction
-            if reaction.target is None or reaction.target in keep
-            else reaction._replace(target=None)
-            for reaction in nuclide.reactions
-        ]
         chain.add_nuclide(nuclide)
 
-    # Add Li-6(n,t). OpenMC's standard (n,t) reaction map automatically adds
-    # H-3 as a secondary and the explicit target is He-4.
-    chain["Li6"].add_reaction(
-        type="(n,t)",
-        target="He4",
-        Q=4.783388e6,
-        branching_ratio=1.0,
+    neutron_nuclides = {
+        name for name in keep if chain[name].reactions
+    }
+    check_neutron_data(
+        material_nuclides,
+        cross_sections_file,
+        required_nuclides=neutron_nuclides,
     )
-
-    # Add Li-7 MT=205. The residual products are inclusive/unresolved, so only
-    # H-3 is tracked as a secondary and no single residual target is assigned.
-    chain["Li7"].add_reaction(
-        type="(n,Xt)",
-        target=None,
-        Q=0.0,
-        branching_ratio=1.0,
-    )
-
-    # add_reaction mutates the nuclide but does not update Chain.reactions.
-    for reaction_name in ("(n,t)", "(n,Xt)"):
-        if reaction_name not in chain.reactions:
-            chain.reactions.append(reaction_name)
 
     chain.validate(strict=True)
     chain.export_to_xml(str(output_file))

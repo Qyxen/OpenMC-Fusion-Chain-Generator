@@ -10,7 +10,8 @@ The generated chain includes:
 - Li-6 `(n,t)` production of H-3
 - Li-7 MT=205 `(n,Xt)` tritium production
 - H-3 beta-minus decay to He-3
-- All nuclides found in the supplied materials file
+- All nuclides found in the supplied materials file and their complete
+  decay/reaction daughter closure
 
 ## Requirements
 
@@ -71,9 +72,12 @@ library = read_neutron_library(Path("cross_sections.xml"))
 check_neutron_data(nuclides, Path("cross_sections.xml"))
 ```
 
-`build_chain` validates neutron-data availability before writing the output.
-It raises `RuntimeError` with the missing nuclide or data-file paths when the
-selected library is incomplete.
+`build_chain` recursively includes every decay daughter, neutron-reaction
+target, and tracked light-particle secondary reachable from the material
+nuclides. It validates neutron-data availability for every retained nuclide
+that has neutron reactions before writing the output. It raises `RuntimeError`
+with the missing nuclide or data-file paths when the selected library is
+incomplete.
 
 ## Using the generated chain
 
