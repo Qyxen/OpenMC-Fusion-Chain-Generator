@@ -13,4 +13,5 @@ dependencies = [
 ]
 
 [tool.setuptools]
+package-dir = {"" = "src"}
 py-modules = ["generate_fusion_chain"]

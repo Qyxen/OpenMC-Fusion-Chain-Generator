@@ -88,12 +88,3 @@ operator = openmc.deplete.CoupledOperator(
 
 The generator does not modify the input materials, cross-section library, or
 base chain files.
-
-## Continuous integration
-
-GitHub Actions runs the unit tests on Python 3.10, 3.11, and 3.12 for every
-push and pull request. Run the same tests locally with:
-
-```bash
-python -m unittest discover -s tests -v
-```
