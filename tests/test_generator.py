@@ -2,11 +2,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from generate_fusion_chain import (
+from openmc_fusion_chain_generator import (
     build_chain,
     check_neutron_data,
+    find_daughter_closure,
     read_material_nuclides,
 )
+from openmc.deplete import Chain
 
 
 BASE_CHAIN = """<?xml version="1.0"?>
@@ -21,6 +23,10 @@ BASE_CHAIN = """<?xml version="1.0"?>
   <nuclide name="Li6" reactions="0"/>
   <nuclide name="Li7" reactions="0"/>
   <nuclide name="Li8" reactions="0"/>
+  <nuclide name="Po209" half_life="12500000000.0" decay_modes="1" decay_energy="0.0" reactions="0">
+    <decay type="alpha" target="Tl205" branching_ratio="1.0"/>
+  </nuclide>
+  <nuclide name="Tl205" reactions="0"/>
 </depletion_chain>
 """
 
@@ -67,6 +73,79 @@ class GeneratorTests(unittest.TestCase):
             self.assertIn('type="(n,Xt)"', result)
             self.assertIn('target="He3"', result)
 
+    def test_daughter_closure_includes_decay_daughters(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base_chain.xml"
+            base.write_text(BASE_CHAIN)
+            chain = Chain.from_xml(str(base))
+
+            closure = find_daughter_closure(chain, {"Po209"})
+
+            self.assertIn("Po209", closure)
+            self.assertIn("Tl205", closure)
+
+    def test_include_all_nuclides_retains_base_chain(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            materials = root / "materials.xml"
+            cross_sections = root / "cross_sections.xml"
+            base = root / "base_chain.xml"
+            output = root / "all_chain.xml"
+
+            materials.write_text(
+                '<materials><material id="1">'
+                '<nuclide name="Li6" ao="1.0"/>'
+                '</material></materials>\n'
+            )
+            base.write_text(BASE_CHAIN)
+            (root / "Li6.h5").touch()
+            (root / "Li7.h5").touch()
+            cross_sections.write_text(
+                '<cross_sections>'
+                '<library type="neutron" materials="Li6" path="Li6.h5"/>'
+                '<library type="neutron" materials="Li7" path="Li7.h5"/>'
+                '</cross_sections>\n'
+            )
+
+            build_chain(
+                base,
+                materials,
+                cross_sections,
+                output,
+                include_all_nuclides=True,
+            )
+
+            result = output.read_text()
+            self.assertIn('name="Be9"', result)
+            self.assertIn('name="Po209"', result)
+            self.assertIn('name="Tl205"', result)
+
+    def test_missing_base_chain_nuclide_raises(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            materials = root / "materials.xml"
+            cross_sections = root / "cross_sections.xml"
+            base = root / "base_chain.xml"
+
+            materials.write_text(
+                '<materials><material id="1">'
+                '<nuclide name="Li6" ao="1.0"/>'
+                '</material></materials>\n'
+            )
+            base.write_text(
+                BASE_CHAIN.replace(
+                    '  <nuclide name="He3" reactions="0"/>\n', ""
+                )
+            )
+            (root / "Li6.h5").touch()
+            cross_sections.write_text(
+                '<cross_sections><library type="neutron" '
+                'materials="Li6" path="Li6.h5"/></cross_sections>'
+            )
+
+            with self.assertRaisesRegex(RuntimeError, "He3"):
+                build_chain(base, materials, cross_sections, root / "out.xml")
+
     def test_missing_neutron_data_raises(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -78,6 +157,18 @@ class GeneratorTests(unittest.TestCase):
 
             with self.assertRaisesRegex(RuntimeError, "Li7"):
                 check_neutron_data({"Li6", "Li7"}, cross_sections)
+
+    def test_missing_neutron_data_file_raises(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cross_sections = Path(directory) / "cross_sections.xml"
+            cross_sections.write_text(
+                '<cross_sections><library type="neutron" '
+                'materials="Li6" path="missing/Li6.h5"/>'
+                '</cross_sections>'
+            )
+
+            with self.assertRaisesRegex(RuntimeError, "Li6.h5"):
+                check_neutron_data({"Li6"}, cross_sections)
 
 
 if __name__ == "__main__":

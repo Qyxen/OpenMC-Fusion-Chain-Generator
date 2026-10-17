@@ -3,12 +3,36 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "openmc-fusion-depletion-chain-generator"
+name = "openmc-fusion-chain-generator"
 version = "0.1.0"
 description = "Generate reduced OpenMC depletion chains for fusion breeder materials"
 readme = "README.md"
 requires-python = ">=3.10"
+authors = [
+    {name = "Hridoy Kabiraj"},
+]
+keywords = [
+    "OpenMC",
+    "depletion",
+    "fusion",
+    "tritium",
+    "nuclear engineering",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+
+[project.scripts]
+openmc-fusion-chain-generator = "openmc_fusion_chain_generator:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-py-modules = ["generate_fusion_chain"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

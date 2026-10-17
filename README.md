@@ -23,7 +23,13 @@ The generated chain includes:
 
 ## Installation
 
-From the project directory:
+Install the released package with:
+
+```bash
+pip install openmc-fusion-chain-generator
+```
+
+For development from a local checkout:
 
 ```bash
 pip install -e .
@@ -39,7 +45,7 @@ conda install -c conda-forge openmc
 After installation, the generator can be imported from any working directory:
 
 ```python
-import generate_fusion_chain
+import openmc_fusion_chain_generator
 ```
 
 ## Python API
@@ -48,7 +54,7 @@ The main user-facing function is `build_chain`:
 
 ```python
 from pathlib import Path
-from generate_fusion_chain import build_chain
+from openmc_fusion_chain_generator import build_chain
 
 build_chain(
     base_file=Path("/path/to/chain_endfb81_fast.xml"),
@@ -75,7 +81,7 @@ build_chain(
 The helper functions are also available:
 
 ```python
-from generate_fusion_chain import (
+from openmc_fusion_chain_generator import (
     read_material_nuclides,
     read_neutron_library,
     check_neutron_data,
@@ -96,7 +102,7 @@ incomplete.
 The equivalent command-line option is:
 
 ```bash
-python src/generate_fusion_chain.py \
+openmc-fusion-chain-generator \
   --materials /path/to/materials.xml \
   --base /path/to/chain.xml \
   --cross-sections /path/to/cross_sections.xml \
@@ -113,7 +119,7 @@ registered with OpenMC:
 ```python
 import sys
 sys.path.insert(0, "/path/to/OpenMC-Fusion-Depletion-Chain-Generator")
-import generate_fusion_chain  # registers (n,Xt)
+import openmc_fusion_chain_generator  # registers (n,Xt)
 
 operator = openmc.deplete.CoupledOperator(
     model,
@@ -128,3 +134,34 @@ base chain files.
 ## Citation
 
 Citation metadata is provided in [CITATION.cff](CITATION.cff).
+
+## Build and publish
+
+Install the packaging tools and build the distribution artifacts:
+
+```bash
+python -m pip install --upgrade build twine
+python -m build
+```
+
+This creates a source distribution and a wheel in `dist/`. Check the package
+metadata before publishing:
+
+```bash
+python -m twine check dist/*
+```
+
+Upload to TestPyPI first:
+
+```bash
+python -m twine upload --repository testpypi dist/*
+```
+
+After verifying the TestPyPI installation, upload the same artifacts to PyPI:
+
+```bash
+python -m twine upload dist/*
+```
+
+Use a PyPI API token through Twine's credential configuration rather than
+putting credentials in shell history or source files.
