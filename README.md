@@ -134,34 +134,3 @@ base chain files.
 ## Citation
 
 Citation metadata is provided in [CITATION.cff](CITATION.cff).
-
-## Build and publish
-
-Install the packaging tools and build the distribution artifacts:
-
-```bash
-python -m pip install --upgrade build twine
-python -m build
-```
-
-This creates a source distribution and a wheel in `dist/`. Check the package
-metadata before publishing:
-
-```bash
-python -m twine check dist/*
-```
-
-Upload to TestPyPI first:
-
-```bash
-python -m twine upload --repository testpypi dist/*
-```
-
-After verifying the TestPyPI installation, upload the same artifacts to PyPI:
-
-```bash
-python -m twine upload dist/*
-```
-
-Use a PyPI API token through Twine's credential configuration rather than
-putting credentials in shell history or source files.
