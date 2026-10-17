@@ -28,6 +28,13 @@ From the project directory:
 pip install -e .
 ```
 
+OpenMC is installed separately because it is distributed through conda-forge
+rather than the PyPI package index used for this project:
+
+```bash
+conda install -c conda-forge openmc
+```
+
 After installation, the generator can be imported from any working directory:
 
 ```python
