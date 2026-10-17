@@ -124,7 +124,7 @@ import openmc_fusion_chain_generator  # registers (n,Xt)
 operator = openmc.deplete.CoupledOperator(
     model,
     "chain_fusion_breeder.xml",
-    normalization_mode="energy-deposition",
+    normalization_mode="source-rate",
 )
 ```
 
